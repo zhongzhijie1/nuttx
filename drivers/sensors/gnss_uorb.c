@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/sensors/gnss_uorb.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -176,10 +178,11 @@ static int gnss_activate(FAR struct sensor_lowerhalf_s *lower,
   if ((upper->crefs == 0 && enable) || (upper->crefs == 1 && !enable))
     {
       ret = upper->lower->ops->activate(upper->lower, filep, enable);
-      if (ret >= 0)
-        {
-          upper->crefs += enable ? 1 : -1;
-        }
+    }
+
+  if (ret >= 0)
+    {
+      upper->crefs += enable ? 1 : -1;
     }
 
   nxmutex_unlock(&upper->lock);

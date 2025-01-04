@@ -1,6 +1,7 @@
 /****************************************************************************
  * fs/mnemofs/mnemofs.c
- * mnemofs: Filesystem for NAND Flash storage devices.
+ *
+ * SPDX-License-Identifier: Apache-2.0 or BSD-3-Clause
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -188,6 +189,8 @@ const struct mountpt_operations g_mnemofs_operations =
   NULL,              /* mmap */
   mnemofs_truncate,  /* truncate */
   NULL,              /* poll */
+  NULL,              /* readv */
+  NULL,              /* writev */
 
   mnemofs_sync,      /* sync */
   mnemofs_dup,       /* dup */

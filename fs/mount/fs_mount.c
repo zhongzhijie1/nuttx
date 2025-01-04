@@ -1,6 +1,8 @@
 /****************************************************************************
  * fs/mount/fs_mount.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -53,7 +55,7 @@
 
 #if defined(CONFIG_FS_FAT) || defined(CONFIG_FS_ROMFS) || \
     defined(CONFIG_FS_SMARTFS) || defined(CONFIG_FS_LITTLEFS) || \
-    defined(CONFIG_FS_FATFS)
+    defined(CONFIG_FS_FATFS) || defined(CONFIG_FS_LROFS)
 #  define BDFS_SUPPORT 1
 #endif
 
@@ -72,7 +74,8 @@
     defined(CONFIG_FS_TMPFS) || defined(CONFIG_FS_USERFS) || \
     defined(CONFIG_FS_CROMFS) || defined(CONFIG_FS_UNIONFS) || \
     defined(CONFIG_FS_HOSTFS) || defined(CONFIG_FS_ZIPFS) || \
-    defined(CONFIG_FS_RPMSGFS) || defined(CONFIG_FS_V9FS)
+    defined(CONFIG_FS_RPMSGFS) || defined(CONFIG_FS_V9FS) || \
+    defined(CONFIG_FS_ARCHIVEFS)
 #  define NODFS_SUPPORT
 #endif
 
@@ -108,6 +111,9 @@ extern const struct mountpt_operations g_smartfs_operations;
 #ifdef CONFIG_FS_LITTLEFS
 extern const struct mountpt_operations g_littlefs_operations;
 #endif
+#ifdef CONFIG_FS_LROFS
+extern const struct mountpt_operations g_lrofs_operations;
+#endif
 
 static const struct fsmap_t g_bdfsmap[] =
 {
@@ -125,6 +131,9 @@ static const struct fsmap_t g_bdfsmap[] =
 #endif
 #ifdef CONFIG_FS_LITTLEFS
     { "littlefs", &g_littlefs_operations },
+#endif
+#ifdef CONFIG_FS_LROFS
+    { "lrofs", &g_lrofs_operations },
 #endif
     { NULL,   NULL },
 };
@@ -203,6 +212,9 @@ extern const struct mountpt_operations g_zipfs_operations;
 #ifdef CONFIG_FS_V9FS
 extern const struct mountpt_operations g_v9fs_operations;
 #endif
+#ifdef CONFIG_FS_ARCHIVEFS
+extern const struct mountpt_operations g_archivefs_operations;
+#endif
 
 static const struct fsmap_t g_nonbdfsmap[] =
 {
@@ -241,6 +253,9 @@ static const struct fsmap_t g_nonbdfsmap[] =
 #endif
 #ifdef CONFIG_FS_V9FS
     { "v9fs", &g_v9fs_operations},
+#endif
+#ifdef CONFIG_FS_ARCHIVEFS
+    { "archivefs", &g_archivefs_operations},
 #endif
     { NULL, NULL },
 };

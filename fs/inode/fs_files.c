@@ -1,6 +1,8 @@
 /****************************************************************************
  * fs/inode/fs_files.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -196,7 +198,7 @@ static int files_extend(FAR struct filelist *list, size_t row)
 
   spin_unlock_irqrestore(NULL, flags);
 
-  if (tmp != NULL && tmp != &list->fl_prefile)
+  if (tmp != NULL)
     {
       fs_heap_free(tmp);
     }
@@ -361,14 +363,7 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
 
 void files_initlist(FAR struct filelist *list)
 {
-  /* The first row will reuse pre-allocated files, which will avoid
-   * unnecessary allocator accesses during file initialization.
-   */
-
-  list->fl_rows = 1;
   list->fl_crefs = 1;
-  list->fl_files = &list->fl_prefile;
-  list->fl_prefile = list->fl_prefiles;
 }
 
 /****************************************************************************
@@ -386,6 +381,14 @@ void files_dumplist(FAR struct filelist *list)
   int count = files_countlist(list);
   int i;
 
+  syslog(LOG_INFO, "%-4s%-4s%-8s%-5s%-10s%-14s"
+#if CONFIG_FS_BACKTRACE > 0
+        " BACKTRACE"
+#endif
+        "\n",
+        "PID", "FD", "FLAGS", "TYPE", "POS", "PATH"
+        );
+
   path = lib_get_pathbuffer();
   if (path == NULL)
     {
@@ -395,6 +398,7 @@ void files_dumplist(FAR struct filelist *list)
   for (i = 0; i < count; i++)
     {
       FAR struct file *filep = files_fget(list, i);
+
 #if CONFIG_FS_BACKTRACE > 0
       char buf[BACKTRACE_BUFFER_SIZE(CONFIG_FS_BACKTRACE)];
 #endif
@@ -496,16 +500,11 @@ void files_putlist(FAR struct filelist *list)
           file_close(&list->fl_files[i][j]);
         }
 
-      if (i != 0)
-        {
-          fs_heap_free(list->fl_files[i]);
-        }
+      fs_heap_free(list->fl_files[i]);
+      list->fl_rows--;
     }
 
-  if (list->fl_files != &list->fl_prefile)
-    {
-      fs_heap_free(list->fl_files);
-    }
+  fs_heap_free(list->fl_files);
 }
 
 /****************************************************************************

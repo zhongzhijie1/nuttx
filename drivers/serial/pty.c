@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/serial/pty.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -136,7 +138,9 @@ static const struct file_operations g_pty_fops =
   pty_ioctl,     /* ioctl */
   NULL,          /* mmap */
   NULL,          /* truncate */
-  pty_poll       /* poll */
+  pty_poll,      /* poll */
+  NULL,          /* readv */
+  NULL           /* writev */
 #ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
   , pty_unlink   /* unlink */
 #endif
@@ -617,7 +621,7 @@ static ssize_t pty_write(FAR struct file *filep,
 #ifdef CONFIG_TTY_SIGINT
           if (pid > 0 && ch == CONFIG_TTY_SIGINT_CHAR)
             {
-              nxsig_tgkill(-1, pid, SIGINT);
+              nxsig_kill(pid, SIGINT);
               return 1;
             }
 #endif
@@ -625,7 +629,7 @@ static ssize_t pty_write(FAR struct file *filep,
 #ifdef CONFIG_TTY_SIGTSTP
           if (pid > 0 && ch == CONFIG_TTY_SIGTSTP_CHAR)
             {
-              nxsig_tgkill(-1, pid, SIGTSTP);
+              nxsig_kill(pid, SIGTSTP);
               return 1;
             }
 #endif

@@ -278,10 +278,6 @@ endif #ARCH_CHIP_CUSTOM
 
 source "$BINDIR/arch/dummy/Kconfig"
 
-config ARCH_TOOLCHAIN_IAR
-	bool
-	default n
-
 config ARCH_TOOLCHAIN_GNU
 	bool
 	default n
@@ -291,13 +287,22 @@ config ARCH_TOOLCHAIN_CLANG
 	select ARCH_TOOLCHAIN_GNU
 	default n
 
-config ARCH_TOOLCHAIN_TASKING
+config ARCH_TOOLCHAIN_GCC
 	bool
+	select ARCH_TOOLCHAIN_GNU
 	default n
 
 config ARCH_TOOLCHAIN_GHS
 	bool
 	select ARCH_TOOLCHAIN_GNU
+	default n
+
+config ARCH_TOOLCHAIN_IAR
+	bool
+	default n
+
+config ARCH_TOOLCHAIN_TASKING
+	bool
 	default n
 
 config ARCH_GNU_NO_WEAKFUNCTIONS
@@ -483,6 +488,11 @@ config ARCH_HAVE_RESET
 config ARCH_HAVE_TESTSET
 	bool
 	default n
+
+config ARCH_HAVE_CUSTOM_TESTSET
+	bool
+	default n
+	select ARCH_HAVE_TESTSET
 
 config ARCH_HAVE_THREAD_LOCAL
 	bool

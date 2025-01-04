@@ -1,6 +1,8 @@
 ############################################################################
 # fs/Makefile
 #
+# SPDX-License-Identifier: Apache-2.0
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.  The
@@ -44,6 +46,7 @@ include event/Make.defs
 
 ifneq ($(CONFIG_DISABLE_MOUNTPOINT),y)
 
+include archivefs/Make.defs
 include mount/Make.defs
 include partition/Make.defs
 include fat/Make.defs
@@ -67,6 +70,7 @@ include yaffs/Make.defs
 include mnemofs/Make.defs
 include v9fs/Make.defs
 include notify/Make.defs
+include lrofs/Make.defs
 endif
 
 CFLAGS += ${INCDIR_PREFIX}$(TOPDIR)$(DELIM)fs

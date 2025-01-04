@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/video/fb.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -1726,7 +1728,7 @@ int fb_register_device(int display, int plane,
   char devname[16];
   int nplanes;
   int ret;
-  size_t i;
+  ssize_t i;
 
   /* Allocate a framebuffer state instance */
 

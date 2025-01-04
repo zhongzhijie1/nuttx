@@ -140,11 +140,11 @@ ifeq ($(CONFIG_LIBM_TOOLCHAIN),y)
   STDLIBS += -lm
 endif
 
-ifeq ($(CONFIG_SCHED_GCOV),y)
+ifeq ($(CONFIG_COVERAGE_TOOLCHAIN),y)
   STDLIBS += -lgcov
 endif
 
-ifeq ($(CONFIG_SIM_GPROF),y)
+ifneq ($(CONFIG_SIM_PROFILE)$(CONFIG_PROFILE_ALL),)
   HOSTCFLAGS += -pg
 endif
 
@@ -434,6 +434,9 @@ ifneq ($(CONFIG_HOST_MACOS),y)
 	         -e 's/__init_array_start/_sinit/g' -e 's/__init_array_end/_einit/g' \
 	         -e 's/__fini_array_start/_sfini/g' -e 's/__fini_array_end/_efini/g' >nuttx.ld
 	$(Q) echo "__init_array_start = .; __init_array_end = .; __fini_array_start = .; __fini_array_end = .;" >>nuttx.ld
+endif
+ifeq ($(CONFIG_OPTEE_OS),y)
+	$(Q) sed -i 's/\*(.text.hot .text.hot.*)/KEEP(*(SORT(.scattered_array*)))\n    *(.text.hot .text.hot.*)/g' nuttx.ld
 endif
 ifeq ($(CONFIG_MM_KASAN_GLOBAL),y)
 	$(Q) sed -i 's/\s*\.interp\s*:\s*{\s*\*(\.interp)\s*}/  \

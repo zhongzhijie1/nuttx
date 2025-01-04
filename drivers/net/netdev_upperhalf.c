@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/net/netdev_upperhalf.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -752,7 +754,11 @@ static inline void netdev_upper_queue_work(FAR struct net_driver_s *dev)
   FAR struct netdev_upperhalf_s *upper = dev->d_private;
 
 #ifdef CONFIG_NETDEV_WORK_THREAD
+#  ifdef CONFIG_NETDEV_RSS
   int cpu = this_cpu();
+#  else
+  const int cpu = 0;
+#  endif
   int semcount;
 
   if (nxsem_get_value(&upper->sem[cpu], &semcount) == OK &&

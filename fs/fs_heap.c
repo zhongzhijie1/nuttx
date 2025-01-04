@@ -1,6 +1,8 @@
 /****************************************************************************
  * fs/fs_heap.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -133,6 +135,11 @@ int fs_heap_asprintf(FAR char **strp, FAR const char *fmt, ...)
   va_end(ap);
 
   return len;
+}
+
+struct mallinfo_task fs_heap_mallinfo_task(FAR const struct malltask *task)
+{
+  return mm_mallinfo_task(g_fs_heap, task);
 }
 
 #endif

@@ -301,7 +301,7 @@ static void dump_stacks(FAR struct tcb_s *rtcb, uintptr_t sp)
       /* Try to restore SP from current_regs if assert from interrupt. */
 
       tcbstack_sp = up_interrupt_context() ?
-                    up_getusrsp((FAR void *)up_current_regs()) : 0;
+                    up_getusrsp((FAR void *)running_regs()) : 0;
       if (tcbstack_sp < tcbstack_base || tcbstack_sp >= tcbstack_top)
         {
           tcbstack_sp = 0;
@@ -600,7 +600,7 @@ static void dump_deadlock(void)
 
 static noreturn_function int pause_cpu_handler(FAR void *arg)
 {
-  memcpy(g_last_regs[this_cpu()], up_current_regs(), sizeof(g_last_regs[0]));
+  memcpy(g_last_regs[this_cpu()], running_regs(), sizeof(g_last_regs[0]));
   g_cpu_paused[this_cpu()] = true;
   up_flush_dcache_all();
   while (1);
@@ -750,16 +750,13 @@ static void dump_fatal_info(FAR struct tcb_s *rtcb,
   usbtrace_enumerate(assert_tracecallback, NULL);
 #endif
 
-#ifdef CONFIG_BOARD_CRASHDUMP
-  board_crashdump(up_getsp(), rtcb, filename, linenum, msg, regs);
-#endif
-
-#if defined(CONFIG_BOARD_COREDUMP_SYSLOG) || \
-    defined(CONFIG_BOARD_COREDUMP_BLKDEV)
-
   /* Flush previous SYSLOG data before possible long time coredump */
 
   syslog_flush();
+
+#ifdef CONFIG_BOARD_CRASHDUMP_CUSTOM
+  board_crashdump(up_getsp(), rtcb, filename, linenum, msg, regs);
+#elif !defined(CONFIG_BOARD_CRASHDUMP_NONE)
 
   /* Dump core information */
 

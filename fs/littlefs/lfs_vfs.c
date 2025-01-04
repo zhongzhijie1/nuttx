@@ -1,6 +1,8 @@
 /****************************************************************************
  * fs/littlefs/lfs_vfs.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -112,8 +114,6 @@ static int     littlefs_dup(FAR const struct file *oldp,
                             FAR struct file *newp);
 static int     littlefs_fstat(FAR const struct file *filep,
                               FAR struct stat *buf);
-static int     littlefs_fchstat(FAR const struct file *filep,
-                                FAR const struct stat *buf, int flags);
 static int     littlefs_truncate(FAR struct file *filep,
                                  off_t length);
 
@@ -146,9 +146,13 @@ static int     littlefs_rename(FAR struct inode *mountpt,
                                FAR const char *newrelpath);
 static int     littlefs_stat(FAR struct inode *mountpt,
                              FAR const char *relpath, FAR struct stat *buf);
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
+static int     littlefs_fchstat(FAR const struct file *filep,
+                                FAR const struct stat *buf, int flags);
 static int     littlefs_chstat(FAR struct inode *mountpt,
                                FAR const char *relpath,
                                FAR const struct stat *buf, int flags);
+#endif
 
 /****************************************************************************
  * Public Data
@@ -170,11 +174,17 @@ const struct mountpt_operations g_littlefs_operations =
   NULL,                   /* mmap */
   littlefs_truncate,      /* truncate */
   NULL,                   /* poll */
+  NULL,                   /* readv */
+  NULL,                   /* writev */
 
   littlefs_sync,          /* sync */
   littlefs_dup,           /* dup */
   littlefs_fstat,         /* fstat */
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
   littlefs_fchstat,       /* fchstat */
+#else
+  NULL,
+#endif
 
   littlefs_opendir,       /* opendir */
   littlefs_closedir,      /* closedir */
@@ -190,7 +200,11 @@ const struct mountpt_operations g_littlefs_operations =
   littlefs_rmdir,         /* rmdir */
   littlefs_rename,        /* rename */
   littlefs_stat,          /* stat */
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
   littlefs_chstat         /* chstat */
+#else
+  NULL,
+#endif
 };
 
 /****************************************************************************
@@ -343,6 +357,7 @@ static int littlefs_open(FAR struct file *filep, FAR const char *relpath,
       goto errout;
     }
 
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
   if (oflags & LFS_O_CREAT)
     {
       struct littlefs_attr_s attr;
@@ -362,6 +377,7 @@ static int littlefs_open(FAR struct file *filep, FAR const char *relpath,
           goto errout_with_file;
         }
     }
+#endif
 
   /* In append mode, we need to set the file pointer to the end of the
    * file.
@@ -756,7 +772,7 @@ static int littlefs_fstat(FAR const struct file *filep, FAR struct stat *buf)
                                                  &attr, sizeof(attr)));
   if (ret < 0)
     {
-      if (ret != -ENODATA)
+      if (ret != -ENODATA && ret != -ENOENT)
         {
           goto errout;
         }
@@ -784,6 +800,7 @@ errout:
   return ret;
 }
 
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
 static int littlefs_fchstat(FAR const struct file *filep,
                             FAR const struct stat *buf, int flags)
 {
@@ -861,6 +878,7 @@ errout:
   nxmutex_unlock(&fs->lock);
   return ret;
 }
+#endif
 
 /****************************************************************************
  * Name: littlefs_truncate
@@ -1696,6 +1714,7 @@ errout:
   return ret;
 }
 
+#ifdef CONFIG_FS_LITTLEFS_ATTR_UPDATE
 static int littlefs_chstat(FAR struct inode *mountpt,
                            FAR const char *relpath,
                            FAR const struct stat *buf, int flags)
@@ -1769,3 +1788,4 @@ errout:
   nxmutex_unlock(&fs->lock);
   return ret;
 }
+#endif

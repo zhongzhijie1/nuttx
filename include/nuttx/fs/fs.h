@@ -28,9 +28,13 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/compiler.h>
 
+#include <nuttx/compiler.h>
+#include <nuttx/fs/uio.h>
+
+#include <sys/uio.h>
 #include <sys/types.h>
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -183,6 +187,7 @@ struct statfs;
 struct pollfd;
 struct mtd_dev_s;
 struct tcb_s;
+struct uio;
 
 /* The internal representation of type DIR is just a container for an inode
  * reference, and the path of directory.
@@ -233,6 +238,8 @@ struct file_operations
 
   CODE int     (*poll)(FAR struct file *filep, FAR struct pollfd *fds,
                        bool setup);
+  CODE ssize_t (*readv)(FAR struct file *filep, FAR const struct uio *uio);
+  CODE ssize_t (*writev)(FAR struct file *filep, FAR const struct uio *uio);
 
   /* The two structures need not be common after this point */
 
@@ -329,6 +336,9 @@ struct mountpt_operations
   CODE int     (*truncate)(FAR struct file *filep, off_t length);
   CODE int     (*poll)(FAR struct file *filep, FAR struct pollfd *fds,
                        bool setup);
+  CODE ssize_t (*readv)(FAR struct file *filep, FAR const struct uio *uio);
+  CODE ssize_t (*writev)(FAR struct file *filep, FAR const struct uio *uio);
+
   /* The two structures need not be common after this point. The following
    * are extended methods needed to deal with the unique needs of mounted
    * file systems.
@@ -510,15 +520,6 @@ struct filelist
   uint8_t           fl_rows;    /* The number of rows of fl_files array */
   uint8_t           fl_crefs;   /* The references to filelist */
   FAR struct file **fl_files;   /* The pointer of two layer file descriptors array */
-
-  /* Pre-allocated files to avoid allocator access during thread creation
-   * phase, For functional safety requirements, increase
-   * CONFIG_NFILE_DESCRIPTORS_PER_BLOCK could also avoid allocator access
-   * caused by the file descriptor exceeding the limit.
-   */
-
-  FAR struct file  *fl_prefile;
-  struct file       fl_prefiles[CONFIG_NFILE_DESCRIPTORS_PER_BLOCK];
 };
 
 /* The following structure defines the list of files used for standard C I/O.
@@ -1416,6 +1417,7 @@ int close_mtddriver(FAR struct inode *pinode);
  ****************************************************************************/
 
 ssize_t file_read(FAR struct file *filep, FAR void *buf, size_t nbytes);
+ssize_t file_readv(FAR struct file *filep, FAR const struct uio *uio);
 
 /****************************************************************************
  * Name: nx_read
@@ -1439,6 +1441,7 @@ ssize_t file_read(FAR struct file *filep, FAR void *buf, size_t nbytes);
  ****************************************************************************/
 
 ssize_t nx_read(int fd, FAR void *buf, size_t nbytes);
+ssize_t nx_readv(int fd, FAR const struct iovec *iov, int iovcnt);
 
 /****************************************************************************
  * Name: file_write
@@ -1468,6 +1471,7 @@ ssize_t nx_read(int fd, FAR void *buf, size_t nbytes);
 
 ssize_t file_write(FAR struct file *filep, FAR const void *buf,
                    size_t nbytes);
+ssize_t file_writev(FAR struct file *filep, FAR const struct uio *uio);
 
 /****************************************************************************
  * Name: nx_write
@@ -1495,6 +1499,7 @@ ssize_t file_write(FAR struct file *filep, FAR const void *buf,
  ****************************************************************************/
 
 ssize_t nx_write(int fd, FAR const void *buf, size_t nbytes);
+ssize_t nx_writev(int fd, FAR const struct iovec *iov, int iovcnt);
 
 /****************************************************************************
  * Name: file_pread

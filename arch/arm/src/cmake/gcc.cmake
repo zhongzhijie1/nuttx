@@ -67,6 +67,7 @@ if(CONFIG_ARCH_TOOLCHAIN_GNU AND NOT CONFIG_ARCH_TOOLCHAIN_CLANG)
   if(GCCVER GREATER_EQUAL 12)
     add_link_options(-Wl,--print-memory-usage)
     add_compile_options(--param=min-pagesize=0)
+    add_compile_options(-Wno-alloc-size-larger-than)
     if(CONFIG_ARCH_RAMFUNCS)
       add_link_options(-Wl,--no-warn-rwx-segments)
     endif()
@@ -127,11 +128,11 @@ if(CONFIG_STACK_USAGE_WARNING AND NOT "${CONFIG_STACK_USAGE_WARNING}" STREQUAL
   add_compile_options(-Wstack-usage=${CONFIG_STACK_USAGE_WARNING})
 endif()
 
-if(CONFIG_SCHED_GCOV_ALL)
+if(CONFIG_COVERAGE_ALL)
   add_compile_options(-fprofile-generate -ftest-coverage)
 endif()
 
-if(CONFIG_SCHED_GPROF_ALL)
+if(CONFIG_PROFILE_ALL)
   add_compile_options(-pg)
 endif()
 
@@ -165,7 +166,7 @@ if(CONFIG_ARCH_INSTRUMENT_ALL)
   add_compile_options(-finstrument-functions)
 endif()
 
-if(CONFIG_SCHED_GPROF_ALL)
+if(CONFIG_PROFILE_ALL)
   add_compile_options(-pg)
 endif()
 

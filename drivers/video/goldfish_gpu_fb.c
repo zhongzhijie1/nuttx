@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/video/goldfish_gpu_fb.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -562,6 +564,10 @@ int goldfish_gpu_fb_register(int display)
 
   fb->vtable.getplaneinfo = goldfish_gpu_fb_getplaneinfo;
   fb->vtable.getvideoinfo = goldfish_gpu_fb_getvideoinfo;
+
+  /* Clear goldfish_gpu_fb */
+
+  goldfish_gpu_fb_commit(fb, fb->planeinfo.fbmem);
 
   /* Create the vsync thread */
 

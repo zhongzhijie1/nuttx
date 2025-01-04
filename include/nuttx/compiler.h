@@ -113,10 +113,6 @@
 #      warning requires compiling with optimization (-O2 or higher)
 #    endif
 #    if CONFIG_FORTIFY_SOURCE == 3
-#      if __GNUC__ < 12 || (defined(__clang__) && __clang_major__ < 12)
-#        error compiler version less than 12 does not support dynamic object size
-#      endif
-
 #      define fortify_size(__o, type) __builtin_dynamic_object_size(__o, type)
 #    else
 #      define fortify_size(__o, type) __builtin_object_size(__o, type)
@@ -131,7 +127,9 @@
                                         } \
                                       while (0)
 
-#    define fortify_va_arg_pack __builtin_va_arg_pack
+#    if !defined(__clang__)
+#      define fortify_va_arg_pack __builtin_va_arg_pack
+#    endif
 #    define fortify_real(fn) __typeof__(fn) __real_##fn __asm__(#fn)
 #    define fortify_function(fn) fortify_real(fn); \
                                  extern __inline__ no_builtin(#fn) \
@@ -244,7 +242,7 @@
 #    define naked_function __attribute__((naked,no_instrument_function))
 #  else
 #    define naked_function
-#endif
+#  endif
 
 /* The always_inline_function attribute informs GCC that the function should
  * always be inlined, regardless of the level of optimization.  The

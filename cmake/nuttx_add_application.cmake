@@ -90,10 +90,12 @@ function(nuttx_add_application)
     DEFINITIONS
     OPTIONS
     NO_MAIN_ALIAS
-    REQUIRED
-    NAME
     ARGN
     ${ARGN})
+
+  if(NOT NAME)
+    return()
+  endif()
 
   # check if SRCS exist
   if(SRCS)
@@ -153,6 +155,24 @@ function(nuttx_add_application)
       # create as library to be archived into libapps.a
       set(TARGET "apps_${NAME}")
       add_library(${TARGET} ${SRCS})
+
+      # Set apps global compile options & definitions hold by
+      # nuttx_apps_interface
+      target_compile_options(
+        ${TARGET}
+        PRIVATE
+          $<GENEX_EVAL:$<TARGET_PROPERTY:nuttx_apps_interface,APPS_COMPILE_OPTIONS>>
+      )
+      target_compile_definitions(
+        ${TARGET}
+        PRIVATE
+          $<GENEX_EVAL:$<TARGET_PROPERTY:nuttx_apps_interface,APPS_COMPILE_DEFINITIONS>>
+      )
+      target_include_directories(
+        ${TARGET}
+        PRIVATE
+          $<GENEX_EVAL:$<TARGET_PROPERTY:nuttx_apps_interface,APPS_INCLUDE_DIRECTORIES>>
+      )
 
       nuttx_add_library_internal(${TARGET})
       # add to list of application libraries

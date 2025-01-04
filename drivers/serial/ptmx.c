@@ -1,6 +1,8 @@
 /****************************************************************************
  * drivers/serial/ptmx.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -149,7 +151,7 @@ static int ptmx_minor_allocate(void)
        * prevent (unexpected) infinite loops.
        */
 
-      if (startaddr == minor)
+      if (startaddr == g_ptmx.px_next)
         {
           /* We are back where we started... the are no free device address */
 

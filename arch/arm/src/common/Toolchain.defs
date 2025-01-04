@@ -72,7 +72,15 @@ ifneq ($(CONFIG_STACK_USAGE_WARNING),0)
   ARCHOPTIMIZATION += -Wstack-usage=$(CONFIG_STACK_USAGE_WARNING)
 endif
 
-ifeq ($(CONFIG_SCHED_GPROF_ALL),y)
+ifeq ($(CONFIG_COVERAGE_ALL),y)
+  ifeq ($(CONFIG_ARCH_TOOLCHAIN_GCC),y)
+    ARCHOPTIMIZATION += -fprofile-generate -ftest-coverage
+  else ifeq ($(CONFIG_ARCH_TOOLCHAIN_CLANG),y)
+    ARCHOPTIMIZATION += -fprofile-instr-generate -fcoverage-mapping
+  endif
+endif
+
+ifeq ($(CONFIG_PROFILE_ALL),y)
   ARCHOPTIMIZATION += -pg
 endif
 
@@ -312,14 +320,18 @@ else
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
 
   ifeq ($(CONFIG_ARCH_TOOLCHAIN_GNU),y)
-    ifeq ($(GCCVER),)
-      export GCCVER := $(shell $(CC) --version | grep gcc | sed -E "s/.* ([0-9]+\.[0-9]+).*/\1/" | cut -d'.' -f1)
-    endif
-    ifeq ($(shell expr "$(GCCVER)" \>= 12), 1)
-      ARCHOPTIMIZATION += --param=min-pagesize=0
-      LDFLAGS += --print-memory-usage
-      ifeq ($(CONFIG_ARCH_RAMFUNCS),y)
-        LDFLAGS += --no-warn-rwx-segments
+    ifeq ($(CONFIG_ARCH_TOOLCHAIN_CLANG),)
+      ifeq ($(GCCVER),)
+        export GCCVER := $(shell $(CC) --version | grep gcc | sed -E "s/.* ([0-9]+\.[0-9]+).*/\1/" | cut -d'.' -f1)
+      endif
+      ifeq ($(shell expr "$(GCCVER)" \>= 12), 1)
+        ARCHOPTIMIZATION += --param=min-pagesize=0 -Wno-alloc-size-larger-than
+        LDFLAGS += --print-memory-usage
+        ifeq ($(CONFIG_ARCH_RAMFUNCS),y)
+          LDFLAGS += --no-warn-rwx-segments
+        else ifeq ($(CONFIG_BOOT_RUNFROMFLASH),)
+          LDFLAGS += --no-warn-rwx-segments
+        endif
       endif
     endif
   endif
@@ -498,7 +510,7 @@ ifeq ($(CONFIG_LIBSUPCXX_TOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libsupc++.a))
 endif
 
-ifeq ($(CONFIG_SCHED_GCOV),y)
+ifeq ($(CONFIG_COVERAGE_TOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libgcov.a))
 endif
 

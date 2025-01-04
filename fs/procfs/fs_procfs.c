@@ -1,6 +1,8 @@
 /****************************************************************************
  * fs/procfs/fs_procfs.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -292,6 +294,8 @@ const struct mountpt_operations g_procfs_operations =
   NULL,              /* mmap */
   NULL,              /* truncate */
   procfs_poll,       /* poll */
+  NULL,              /* readv */
+  NULL,              /* writev */
 
   NULL,              /* sync */
   procfs_dup,        /* dup */
@@ -788,9 +792,24 @@ static int procfs_opendir(FAR struct inode *mountpt, FAR const char *relpath,
 static int procfs_closedir(FAR struct inode *mountpt,
                            FAR struct fs_dirent_s *dir)
 {
+  FAR struct procfs_dir_priv_s *dirpriv;
+  int ret = OK;
+
   DEBUGASSERT(mountpt && dir);
-  fs_heap_free(dir);
-  return OK;
+
+  dirpriv = (FAR struct procfs_dir_priv_s *)dir;
+
+  if (dirpriv->procfsentry != NULL &&
+      dirpriv->procfsentry->ops->closedir != NULL)
+    {
+      ret = dirpriv->procfsentry->ops->closedir(dir);
+    }
+  else
+    {
+      fs_heap_free(dir);
+    }
+
+  return ret;
 }
 
 /****************************************************************************

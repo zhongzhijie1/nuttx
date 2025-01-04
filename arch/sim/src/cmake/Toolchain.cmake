@@ -86,11 +86,11 @@ if(CONFIG_STACK_USAGE_WARNING)
   add_compile_options(-Wstack-usage=${CONFIG_STACK_USAGE_WARNING})
 endif()
 
-if(CONFIG_SCHED_GCOV_ALL)
+if(CONFIG_COVERAGE_ALL)
   add_compile_options(-fprofile-generate -ftest-coverage)
 endif()
 
-if(CONFIG_SCHED_GPROF_ALL OR CONFIG_SIM_GPROF)
+if(CONFIG_PROFILE_ALL OR CONFIG_SIM_PROFILE)
   add_compile_options(-pg)
 endif()
 
@@ -187,6 +187,10 @@ if(CONFIG_LIBCXX)
   endif()
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-D__GLIBCXX__>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-D_LIBCPP_DISABLE_AVAILABILITY>)
+endif()
+
+if(CONFIG_LIBCXX_TEST)
+  add_link_options(-Wl,-latomic)
 endif()
 
 if(APPLE)
