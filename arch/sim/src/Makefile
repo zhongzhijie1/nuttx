@@ -86,6 +86,7 @@ CSRCS += sim_checkhostfstypes.c
 
 ifeq ($(CONFIG_SCHED_BACKTRACE),y)
 CSRCS += sim_backtrace.c
+STDLIBS += -lunwind
 endif
 
 ifeq ($(CONFIG_ARCH_HAVE_FORK),y)
@@ -142,10 +143,6 @@ endif
 
 ifeq ($(CONFIG_COVERAGE_TOOLCHAIN),y)
   STDLIBS += -lgcov
-endif
-
-ifneq ($(CONFIG_SIM_PROFILE)$(CONFIG_PROFILE_ALL),)
-  HOSTCFLAGS += -pg
 endif
 
 ifeq ($(CONFIG_STACK_COLORATION),y)

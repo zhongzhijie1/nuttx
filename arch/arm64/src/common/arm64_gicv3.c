@@ -27,6 +27,7 @@
 #include <assert.h>
 
 #include <nuttx/arch.h>
+#include <arch/barriers.h>
 #include <arch/irq.h>
 #include <arch/chip/chip.h>
 #include <sched/sched.h>
@@ -163,44 +164,8 @@ static inline void arm64_gic_write_irouter(uint64_t val, unsigned int intid)
   putreg64(val, addr);
 }
 
-void arm64_gic_irq_set_priority(unsigned int intid, unsigned int prio,
-                                uint32_t flags)
-{
-  uint32_t      mask  = BIT(intid & (GIC_NUM_INTR_PER_REG - 1));
-  uint32_t      idx   = intid / GIC_NUM_INTR_PER_REG;
-  uint32_t      shift;
-  uint32_t      val;
-  unsigned long base = GET_DIST_BASE(intid);
-
-  /* Disable the interrupt */
-
-  putreg32(mask, ICENABLER(base, idx));
-  gic_wait_rwp(intid);
-
-  /* PRIORITYR registers provide byte access */
-
-  putreg8(prio & GIC_PRI_MASK, IPRIORITYR(base, intid));
-
-  /* Interrupt type config */
-
-  if (!GIC_IS_SGI(intid))
-    {
-      idx     = intid / GIC_NUM_CFG_PER_REG;
-      shift   = (intid & (GIC_NUM_CFG_PER_REG - 1)) * 2;
-
-      val = getreg32(ICFGR(base, idx));
-      val &= ~(GICD_ICFGR_MASK << shift);
-      if (flags & IRQ_TYPE_EDGE)
-        {
-          val |= (GICD_ICFGR_TYPE << shift);
-        }
-
-      putreg32(val, ICFGR(base, idx));
-    }
-}
-
 /***************************************************************************
- * Name: arm64_gic_irq_trigger
+ * Name: up_set_irq_type
  *
  * Description:
  *   Set the trigger type for the specified IRQ source and the current CPU.
@@ -209,30 +174,29 @@ void arm64_gic_irq_set_priority(unsigned int intid, unsigned int prio,
  *   avoided in common implementations where possible.
  *
  * Input Parameters:
- *   irq   - The interrupt request to modify.
- *   flags - irq type, IRQ_TYPE_EDGE or IRQ_TYPE_LEVEL
- *           Default is IRQ_TYPE_LEVEL
+ *   irq  - The interrupt request to modify.
+ *   mode - Level sensitive or edge sensitive
  *
  * Returned Value:
  *   Zero (OK) on success; a negated errno value is returned on any failure.
  *
  ***************************************************************************/
 
-int arm64_gic_irq_trigger(unsigned int intid, uint32_t flags)
+int up_set_irq_type(int irq, int mode)
 {
-  uint32_t      idx  = intid / GIC_NUM_INTR_PER_REG;
+  uint32_t      idx  = irq / GIC_NUM_INTR_PER_REG;
   uint32_t      shift;
   uint32_t      val;
-  unsigned long base = GET_DIST_BASE(intid);
+  unsigned long base = GET_DIST_BASE(irq);
 
-  if (!GIC_IS_SGI(intid))
+  if (!GIC_IS_SGI(irq))
     {
-      idx   = intid / GIC_NUM_CFG_PER_REG;
-      shift = (intid & (GIC_NUM_CFG_PER_REG - 1)) * 2;
+      idx   = irq / GIC_NUM_CFG_PER_REG;
+      shift = (irq & (GIC_NUM_CFG_PER_REG - 1)) * 2;
 
       val = getreg32(ICFGR(base, idx));
       val &= ~(GICD_ICFGR_MASK << shift);
-      if (flags & IRQ_TYPE_EDGE)
+      if (mode != IRQ_HIGH_LEVEL && mode != IRQ_LOW_LEVEL)
         {
           val |= (GICD_ICFGR_TYPE << shift);
         }
@@ -301,7 +265,7 @@ unsigned int arm64_gic_get_active_irq(void)
    * to be visible until after the execution of a DSB.
    */
 
-  ARM64_DSB();
+  UP_DSB();
   return intid;
 }
 
@@ -320,7 +284,7 @@ unsigned int arm64_gic_get_active_fiq(void)
    * to be visible until after the execution of a DSB.
    */
 
-  ARM64_DSB();
+  UP_DSB();
   return intid;
 }
 #endif
@@ -338,13 +302,13 @@ void aarm64_gic_eoi_irq(unsigned int intid)
    * DEVICE nGnRnE attribute.
    */
 
-  ARM64_DSB();
+  UP_DSB();
 
   /* (AP -> Pending) Or (Active -> Inactive) or (AP to AP) nested case */
 
   write_sysreg(intid, ICC_EOIR1_EL1);
 
-  ARM64_ISB();
+  UP_ISB();
 }
 
 #ifdef CONFIG_ARM64_DECODEFIQ
@@ -361,12 +325,12 @@ void arm64_gic_eoi_fiq(unsigned int intid)
    * DEVICE nGnRnE attribute.
    */
 
-  ARM64_DSB();
+  UP_DSB();
 
   /* (AP -> Pending) Or (Active -> Inactive) or (AP to AP) nested case */
 
   write_sysreg(intid, ICC_EOIR0_EL1);
-  ARM64_ISB();
+  UP_ISB();
 }
 #endif
 
@@ -378,9 +342,7 @@ static int arm64_gic_send_sgi(unsigned int sgi_id, uint64_t target_aff,
   uint32_t aff1;
   uint64_t sgi_val;
   uint32_t regval;
-  unsigned long base;
 
-  base = gic_get_rdist() + GICR_SGI_BASE_OFF;
   ASSERT(GIC_IS_SGI(sgi_id));
 
   /* Extract affinity fields from target */
@@ -392,9 +354,11 @@ static int arm64_gic_send_sgi(unsigned int sgi_id, uint64_t target_aff,
   sgi_val = GICV3_SGIR_VALUE(aff3, aff2, aff1, sgi_id, SGIR_IRM_TO_AFF,
                              target_list);
 
-  ARM64_DSB();
+  UP_DSB();
 
-  regval = getreg32(IGROUPR(base, 0));
+  /* Read the IGROUPR0 value we set in `gicv3_cpuif_init` */
+
+  regval = IGROUPR_SGI_VAL;
 
   if (regval & BIT(sgi_id))
     {
@@ -405,7 +369,7 @@ static int arm64_gic_send_sgi(unsigned int sgi_id, uint64_t target_aff,
       write_sysreg(sgi_val, ICC_SGI0R_EL1); /* Group 0 */
     }
 
-  ARM64_ISB();
+  UP_ISB();
 
   return 0;
 }
@@ -518,7 +482,7 @@ static void gicv3_cpuif_init(void)
          ICC_SRE_ELX_DFB_BIT);
       write_sysreg(icc_sre, ICC_SRE_EL1);
 
-      ARM64_ISB();
+      UP_ISB();
 
       icc_sre = read_sysreg(ICC_SRE_EL1);
 
@@ -535,7 +499,7 @@ static void gicv3_cpuif_init(void)
   write_sysreg(1, ICC_IGRPEN0_EL1);
 #endif
 
-  ARM64_ISB();
+  UP_ISB();
 }
 
 static void gicv3_dist_init(void)

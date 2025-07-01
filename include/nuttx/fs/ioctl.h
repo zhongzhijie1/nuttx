@@ -28,6 +28,8 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+
+#include <stdbool.h>
 #include <sys/types.h>
 
 /****************************************************************************
@@ -107,6 +109,7 @@
 #define _PINCTRLBASE    (0x4000) /* Pinctrl driver ioctl commands */
 #define _PCIBASE        (0x4100) /* Pci ioctl commands */
 #define _I3CBASE        (0x4200) /* I3C driver ioctl commands */
+#define _MSIOCBASE      (0x4300) /* Mouse ioctl commands */
 #define _WLIOCBASE      (0x8b00) /* Wireless modules ioctl network commands */
 
 /* boardctl() commands share the same number space */
@@ -368,6 +371,11 @@
 
 #define _TSIOCVALID(c)    (_IOC_TYPE(c)==_TSIOCBASE)
 #define _TSIOC(nr)        _IOC(_TSIOCBASE,nr)
+
+/* NuttX mouse ioctl definitions (see nuttx/input/mouse.h) ******************/
+
+#define _MSIOCVALID(c)    (_IOC_TYPE(c)==_MSIOCBASE)
+#define _MSIOC(nr)        _IOC(_MSIOCBASE,nr)
 
 /* NuttX sensor ioctl definitions (see nuttx/sensor/ioctl.h) ****************/
 
@@ -757,6 +765,33 @@
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
+
+struct geometry
+{
+  bool      geo_available;    /* true: The device is available */
+  bool      geo_mediachanged; /* true: The media has changed since last query */
+  bool      geo_writeenabled; /* true: It is okay to write to this device */
+  blkcnt_t  geo_nsectors;     /* Number of sectors on the device */
+  blksize_t geo_sectorsize;   /* Size of one sector */
+
+  /* NULL-terminated string representing the device model */
+
+  char      geo_model[NAME_MAX + 1];
+};
+
+struct partition_info_s
+{
+  size_t    numsectors;   /* Number of sectors in the partition */
+  size_t    sectorsize;   /* Size in bytes of a single sector */
+  off_t     startsector;  /* Offset to the first section/block of the
+                           * managed sub-region */
+
+  /* NULL-terminated string representing the name of the parent node of the
+   * partition.
+   */
+
+  char      parent[NAME_MAX + 1];
+};
 
 struct pipe_peek_s
 {

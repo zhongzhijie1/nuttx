@@ -33,6 +33,7 @@
 #include <nuttx/rpmsg/rpmsg.h>
 
 #include "rpmsg_ping.h"
+#include "rpmsg_test.h"
 
 /****************************************************************************
  * Private Types
@@ -124,6 +125,11 @@ static int rpmsg_dev_ioctl_(FAR struct rpmsg_s *rpmsg, int cmd,
         ret = rpmsg_ping(&rpmsg->ping, (FAR const struct rpmsg_ping_s *)arg);
         break;
 #endif
+#ifdef CONFIG_RPMSG_TEST
+      case RPMSGIOC_TEST:
+        ret = rpmsg_test(&rpmsg->test, arg);
+        break;
+#endif
       default:
         if (rpmsg->ops->ioctl)
           {
@@ -207,6 +213,18 @@ FAR const char *rpmsg_get_cpuname(FAR struct rpmsg_device *rdev)
 {
   FAR struct rpmsg_s *rpmsg = rpmsg_get_by_rdev(rdev);
   return rpmsg ? rpmsg->ops->get_cpuname(rpmsg) : NULL;
+}
+
+int rpmsg_get_signals(FAR struct rpmsg_endpoint *ept)
+{
+  FAR struct rpmsg_s *rpmsg = rpmsg_get_by_rdev(ept->rdev);
+
+  if (rpmsg->ops->get_signals)
+    {
+      return rpmsg->ops->get_signals(ept);
+    }
+
+  return 0;
 }
 
 int rpmsg_register_callback(FAR void *priv,
@@ -412,6 +430,9 @@ void rpmsg_device_created(FAR struct rpmsg_s *rpmsg)
 #ifdef CONFIG_RPMSG_PING
   rpmsg_ping_init(rpmsg->rdev, &rpmsg->ping);
 #endif
+#ifdef CONFIG_RPMSG_TEST
+  rpmsg_test_init(rpmsg->rdev, &rpmsg->test);
+#endif
 }
 
 void rpmsg_device_destory(FAR struct rpmsg_s *rpmsg)
@@ -421,6 +442,10 @@ void rpmsg_device_destory(FAR struct rpmsg_s *rpmsg)
 
 #ifdef CONFIG_RPMSG_PING
   rpmsg_ping_deinit(&rpmsg->ping);
+#endif
+
+#ifdef CONFIG_RPMSG_TEST
+  rpmsg_test_deinit(&rpmsg->test);
 #endif
 
   nxrmutex_lock(&rpmsg->lock);
