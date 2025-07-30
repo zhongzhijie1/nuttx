@@ -26,7 +26,7 @@
 
 #include <nuttx/config.h>
 #include <nuttx/wireless/bluetooth/bt_driver.h>
-
+#include "syslog.h"
 #ifdef CONFIG_UART_BTH4
 #  include <nuttx/serial/uart_bth4.h>
 #endif
@@ -116,6 +116,7 @@ int bt_driver_register_with_id(FAR struct bt_driver_s *driver, int id)
     }
 
 #else
+  syslog(LOG_CRIT, "btuart_register");
   ret = bt_driver_register_internal(driver, "/dev/ttyHCI%d", id);
   if (ret < 0)
     {
