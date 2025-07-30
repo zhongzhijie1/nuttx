@@ -64,6 +64,52 @@
 #  include <nuttx/android/binder.h>
 #endif
 
+#include "syslog.h"
+
+#include <nuttx/wireless/bluetooth/bt_driver.h> /* 添加bt_driver.h头文件引用 */
+
+/* 以下为示例实现，仅做示范。
+ * 在实际项目中，你可以在这些函数中添加真正的业务逻辑。
+ */
+
+/* 1. 打开 HCI 传输 */
+static int sample_open(struct bt_driver_s *btdev)
+{
+  syslog(LOG_INFO, "sample_open called.\n");
+  /* 你可以在这里做一些初始化操作 */
+  return 0;
+}
+
+/* 2. 发送数据到 HCI */
+static int sample_send(struct bt_driver_s *btdev,
+                       enum bt_buf_type_e type,
+                       void *data, size_t len)
+{
+  syslog(LOG_INFO, "sample_send called. type=%d, data=%p, len=%zu\n",
+         type, data, len);
+  /* 这里可以实现将数据发送到底层的逻辑 */
+  return 0;
+}
+
+/* 3. 关闭 HCI 传输 */
+static void sample_close(struct bt_driver_s *btdev)
+{
+  syslog(LOG_INFO, "sample_close called.\n");
+  /* 在此进行资源释放或其他关闭操作 */
+}
+
+/* 4. receive成员函数在驱动注册时由openvela指定 */
+
+/* 初始化一个 bt_driver_s 实例，并将函数指针赋值为上面定义的示例函数 */
+struct bt_driver_s sample_driver =
+{
+    .head_reserve = 1,   /* 设置头部预留大小，默认为 1 */
+    .open         = sample_open,     /* 指向示例中的 sample_open 函数 */
+    .send         = sample_send,     /* 指向示例中的 sample_send 函数 */
+    .close        = sample_close,    /* 指向示例中的 sample_close 函数 */
+    /* 注意：厂商及开发者请不要自行赋值 .receive 成员函数 */
+};
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -307,6 +353,9 @@ void drivers_initialize(void)
 #ifdef CONFIG_THERMAL
   thermal_init();
 #endif
+
+  /* 使用 bt_driver_register_with_id(&sample_driver, 2) 注册 /dev/ttyHCI2 节点 */
+  bt_driver_register_with_id(&sample_driver, 2);
 
   drivers_trace_end();
 }
